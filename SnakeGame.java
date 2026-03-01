@@ -12,6 +12,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
 
     private LinkedList<Point> snake;
     private Point food;
+    private char dir = 'R'; // 新增方向变量
     private Timer timer;
     private Random random;
 
@@ -43,22 +44,27 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // 绘制蛇
         g.setColor(Color.GREEN);
         for (Point p : snake) {
             g.fillRect(p.y * CELL_SIZE, p.x * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
         }
-        // 绘制食物
         g.setColor(Color.RED);
         g.fillOval(food.y * CELL_SIZE, food.x * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
     }
 
     private void move() {
         Point head = snake.getFirst();
-        // 错误1：蛇永远向右移动，方向控制逻辑完全缺失
-        Point newHead = new Point(head.x, head.y + 1);
-        snake.addFirst(newHead);
+        Point newHead = new Point(head);
 
+        // 修复1：根据方向计算新头位置
+        switch (dir) {
+            case 'U': newHead.x--; break;
+            case 'D': newHead.x++; break;
+            case 'L': newHead.y--; break;
+            case 'R': newHead.y++; break;
+        }
+
+        snake.addFirst(newHead);
         if (newHead.equals(food)) {
             createFood();
         } else {
@@ -74,7 +80,13 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        // 错误2：键盘事件处理为空，无法控制方向
+        // 修复2：添加了键盘控制
+        int k = e.getKeyCode();
+        if (k == KeyEvent.VK_UP) dir = 'U';
+        if (k == KeyEvent.VK_DOWN) dir = 'D';
+        if (k == KeyEvent.VK_LEFT) dir = 'L';
+        if (k == KeyEvent.VK_RIGHT) dir = 'R';
+        // 错误1：缺少180度转向保护，比如向右时按左，直接掉头
     }
 
     @Override
