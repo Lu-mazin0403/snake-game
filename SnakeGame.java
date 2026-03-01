@@ -21,6 +21,8 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     private boolean isPaused = false;
     private int currentSpeed = INIT_SPEED;
     private int score = 0;
+    private long startTime;
+    private long gameTime;
 
     public SnakeGame() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE, ROWS * CELL_SIZE));
@@ -41,6 +43,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         isPaused = false;
         currentSpeed = INIT_SPEED;
         score = 0;
+        startTime = System.currentTimeMillis();
         createFood();
         if (timer != null) timer.stop();
         timer = new Timer(currentSpeed, this);
@@ -74,11 +77,20 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         g.setColor(Color.RED);
         g.fillOval(food.y * CELL_SIZE, food.x * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
 
+        g.setColor(Color.WHITE);
+        g.drawString("得分: " + score, 10, 20);
+        if (!isGameOver) {
+            gameTime = (System.currentTimeMillis() - startTime) / 1000;
+        }
+        g.drawString("时间: " + gameTime + "秒", 10, 40);
+
         if (isGameOver) {
             g.setColor(Color.RED);
             g.setFont(new Font("Arial", Font.BOLD, 36));
             g.drawString("游戏结束", getWidth() / 2 - 80, getHeight() / 2);
             g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("最终得分: " + score, getWidth() / 2 - 50, getHeight() / 2 + 40);
+            g.drawString("总时长: " + gameTime + "秒", getWidth() / 2 - 50, getHeight() / 2 + 70);
             g.drawString("按空格键重新开始", getWidth() / 2 - 80, getHeight() / 2 + 100);
         } else if (isPaused) {
             g.setColor(Color.YELLOW);
@@ -103,11 +115,13 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         if (newHead.x <= 0 || newHead.x >= ROWS || newHead.y <= 0 || newHead.y >= COLS) {
             isGameOver = true;
             timer.stop();
+            gameTime = (System.currentTimeMillis() - startTime) / 1000;
             return;
         }
         if (snake.contains(newHead)) {
             isGameOver = true;
             timer.stop();
+            gameTime = (System.currentTimeMillis() - startTime) / 1000;
             return;
         }
 
