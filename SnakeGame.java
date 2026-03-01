@@ -9,13 +9,18 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     private static final int COLS = 30;
     private static final int CELL_SIZE = 25;
     private static final int INIT_SPEED = 200;
+    private static final int MIN_SPEED = 100;
+    private static final int SPEED_UP = 10;
 
     private LinkedList<Point> snake;
     private Point food;
     private char dir = 'R';
     private Timer timer;
     private Random random;
-    private boolean isGameOver = false; // 新增游戏结束状态
+    private boolean isGameOver = false;
+    private boolean isPaused = false;
+    private int currentSpeed = INIT_SPEED;
+    private int score = 0;
 
     public SnakeGame() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE, ROWS * CELL_SIZE));
@@ -23,17 +28,23 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         setFocusable(true);
         addKeyListener(this);
         random = new Random();
-        initSnake();
-        createFood();
-        timer = new Timer(INIT_SPEED, this);
-        timer.start();
+        initGame();
     }
 
-    private void initSnake() {
+    private void initGame() {
         snake = new LinkedList<>();
         snake.add(new Point(10, 16));
         snake.add(new Point(10, 15));
         snake.add(new Point(10, 14));
+        dir = 'R';
+        isGameOver = false;
+        isPaused = false;
+        currentSpeed = INIT_SPEED;
+        score = 0;
+        createFood();
+        if (timer != null) timer.stop();
+        timer = new Timer(currentSpeed, this);
+        timer.start();
     }
 
     private void createFood() {
@@ -65,13 +76,19 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
 
         if (isGameOver) {
             g.setColor(Color.RED);
-            g.setFont(new Font("Arial", Font.BOLD, 30));
+            g.setFont(new Font("Arial", Font.BOLD, 36));
             g.drawString("游戏结束", getWidth() / 2 - 80, getHeight() / 2);
+            g.setFont(new Font("Arial", Font.PLAIN, 18));
+            g.drawString("按空格键重新开始", getWidth() / 2 - 80, getHeight() / 2 + 100);
+        } else if (isPaused) {
+            g.setColor(Color.YELLOW);
+            g.setFont(new Font("Arial", Font.BOLD, 36));
+            g.drawString("游戏暂停", getWidth() / 2 - 80, getHeight() / 2);
         }
     }
 
     private void move() {
-        if (isGameOver) return; // 修复：游戏结束后不再移动
+        if (isGameOver || isPaused) return;
 
         Point head = snake.getFirst();
         Point newHead = new Point(head);
@@ -83,18 +100,22 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
             case 'R': newHead.y++; break;
         }
 
-        // 修复：添加了碰撞检测
         if (newHead.x <= 0 || newHead.x >= ROWS || newHead.y <= 0 || newHead.y >= COLS) {
             isGameOver = true;
+            timer.stop();
             return;
         }
         if (snake.contains(newHead)) {
             isGameOver = true;
+            timer.stop();
             return;
         }
 
         snake.addFirst(newHead);
         if (newHead.equals(food)) {
+            score += 10;
+            currentSpeed = Math.max(MIN_SPEED, currentSpeed - SPEED_UP);
+            timer.setDelay(currentSpeed);
             createFood();
         } else {
             snake.removeLast();
@@ -105,17 +126,28 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     public void actionPerformed(ActionEvent e) {
         move();
         repaint();
-        // 错误1：游戏结束后，定时器没有停止，还在不断触发repaint
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int k = e.getKeyCode();
+
+        if (k == KeyEvent.VK_SPACE) {
+            if (isGameOver) {
+                initGame();
+            } else {
+                isPaused = !isPaused;
+            }
+            repaint();
+            return;
+        }
+
+        if (isPaused || isGameOver) return;
+
         if (k == KeyEvent.VK_UP && dir != 'D') dir = 'U';
         if (k == KeyEvent.VK_DOWN && dir != 'U') dir = 'D';
         if (k == KeyEvent.VK_LEFT && dir != 'R') dir = 'L';
         if (k == KeyEvent.VK_RIGHT && dir != 'L') dir = 'R';
-        // 错误2：没有暂停和重新开始功能
     }
 
     @Override
