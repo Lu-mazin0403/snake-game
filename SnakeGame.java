@@ -15,6 +15,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     private char dir = 'R';
     private Timer timer;
     private Random random;
+    private boolean isGameOver = false; // 新增游戏结束状态
 
     public SnakeGame() {
         setPreferredSize(new Dimension(COLS * CELL_SIZE, ROWS * CELL_SIZE));
@@ -41,13 +42,12 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
             r = random.nextInt(ROWS) + 1;
             c = random.nextInt(COLS) + 1;
             food = new Point(r, c);
-        } while (snake.contains(food)); // 修复：食物不会生成在蛇身上
+        } while (snake.contains(food));
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        // 修复：绘制了边界墙
         g.setColor(Color.DARK_GRAY);
         for (int r = 0; r <= ROWS; r++) {
             for (int c = 0; c <= COLS; c++) {
@@ -62,9 +62,17 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         }
         g.setColor(Color.RED);
         g.fillOval(food.y * CELL_SIZE, food.x * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
+
+        if (isGameOver) {
+            g.setColor(Color.RED);
+            g.setFont(new Font("Arial", Font.BOLD, 30));
+            g.drawString("游戏结束", getWidth() / 2 - 80, getHeight() / 2);
+        }
     }
 
     private void move() {
+        if (isGameOver) return; // 修复：游戏结束后不再移动
+
         Point head = snake.getFirst();
         Point newHead = new Point(head);
 
@@ -75,29 +83,39 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
             case 'R': newHead.y++; break;
         }
 
+        // 修复：添加了碰撞检测
+        if (newHead.x <= 0 || newHead.x >= ROWS || newHead.y <= 0 || newHead.y >= COLS) {
+            isGameOver = true;
+            return;
+        }
+        if (snake.contains(newHead)) {
+            isGameOver = true;
+            return;
+        }
+
         snake.addFirst(newHead);
         if (newHead.equals(food)) {
             createFood();
         } else {
             snake.removeLast();
         }
-        // 错误1：没有任何碰撞检测，蛇可以穿墙和穿身
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
         move();
         repaint();
+        // 错误1：游戏结束后，定时器没有停止，还在不断触发repaint
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
         int k = e.getKeyCode();
-        // 修复：添加了180度转向保护
         if (k == KeyEvent.VK_UP && dir != 'D') dir = 'U';
         if (k == KeyEvent.VK_DOWN && dir != 'U') dir = 'D';
         if (k == KeyEvent.VK_LEFT && dir != 'R') dir = 'L';
         if (k == KeyEvent.VK_RIGHT && dir != 'L') dir = 'R';
+        // 错误2：没有暂停和重新开始功能
     }
 
     @Override
