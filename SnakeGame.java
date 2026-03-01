@@ -12,7 +12,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
 
     private LinkedList<Point> snake;
     private Point food;
-    private char dir = 'R'; // 新增方向变量
+    private char dir = 'R';
     private Timer timer;
     private Random random;
 
@@ -36,14 +36,26 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
     }
 
     private void createFood() {
-        int r = random.nextInt(ROWS) + 1;
-        int c = random.nextInt(COLS) + 1;
-        food = new Point(r, c);
+        int r, c;
+        do {
+            r = random.nextInt(ROWS) + 1;
+            c = random.nextInt(COLS) + 1;
+            food = new Point(r, c);
+        } while (snake.contains(food)); // 修复：食物不会生成在蛇身上
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        // 修复：绘制了边界墙
+        g.setColor(Color.DARK_GRAY);
+        for (int r = 0; r <= ROWS; r++) {
+            for (int c = 0; c <= COLS; c++) {
+                if (r == 0 || r == ROWS || c == 0 || c == COLS) {
+                    g.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+            }
+        }
         g.setColor(Color.GREEN);
         for (Point p : snake) {
             g.fillRect(p.y * CELL_SIZE, p.x * CELL_SIZE, CELL_SIZE - 2, CELL_SIZE - 2);
@@ -56,7 +68,6 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         Point head = snake.getFirst();
         Point newHead = new Point(head);
 
-        // 修复1：根据方向计算新头位置
         switch (dir) {
             case 'U': newHead.x--; break;
             case 'D': newHead.x++; break;
@@ -70,6 +81,7 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
         } else {
             snake.removeLast();
         }
+        // 错误1：没有任何碰撞检测，蛇可以穿墙和穿身
     }
 
     @Override
@@ -80,13 +92,12 @@ public class SnakeGame extends JPanel implements ActionListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent e) {
-        // 修复2：添加了键盘控制
         int k = e.getKeyCode();
-        if (k == KeyEvent.VK_UP) dir = 'U';
-        if (k == KeyEvent.VK_DOWN) dir = 'D';
-        if (k == KeyEvent.VK_LEFT) dir = 'L';
-        if (k == KeyEvent.VK_RIGHT) dir = 'R';
-        // 错误1：缺少180度转向保护，比如向右时按左，直接掉头
+        // 修复：添加了180度转向保护
+        if (k == KeyEvent.VK_UP && dir != 'D') dir = 'U';
+        if (k == KeyEvent.VK_DOWN && dir != 'U') dir = 'D';
+        if (k == KeyEvent.VK_LEFT && dir != 'R') dir = 'L';
+        if (k == KeyEvent.VK_RIGHT && dir != 'L') dir = 'R';
     }
 
     @Override
